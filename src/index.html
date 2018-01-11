@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Make Working</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+
+    <link rel="stylesheet" href="assets/css/global.less">
+    <link rel="stylesheet" href="assets/css/setup.less">
+
+    <link rel="import" href="sections/initial-setup.html">
+    <link rel="import" href="sections/get-started.html">
+    <!--<link rel="import" href="sections/settings.html">-->
+    <link rel="import" href="sections/main.html">
+
+  </head>
+  <body>
+      <div id="title-bar">
+        <div class="logo"> 
+          <img src="./assets/logo/logo-long.png">
+        </div>
+        <div id="title-bar-btns">
+
+              <a id="min-btn" class="icon-min btn"></a>
+
+              <a id="max-btn" class="icon-max btn"></a>
+
+              <a id="close-btn" class="icon-close btn"></a>
+
+        </div>
+          
+      </div>
+  </body>
+  <script>
+    require('./assets/imports')
+    require('./assets/nav')
+    require('./renderer.js')
+  </script>
+</html>
