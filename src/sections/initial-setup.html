@@ -1,0 +1,19 @@
+<template class="task-template">
+    <div id="setup-modal" class="setup modal">
+        <div class="heading">
+            <p>
+                Hi there!
+            </p>
+        </div>
+        <div class="explanation">
+            Choose a directory that you want to be used as a working directory. This should generally be your faster harddrive.  Make Working will put a hidden folder at this location and store data there.
+        </div>
+        <div class="button-holder">
+            <a id="select-directory" class="btn">Select a directory</a>
+        </div> 
+        <p style="text-transform:lowercase;" id="selected-directory"> </p>
+        <div class="continue-holder">
+            <a id="setup-continue" class="continue-btn btn inactive" data-page="setup">Continue</a>    
+        </div>
+    </div>
+</template>
