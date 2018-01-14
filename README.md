@@ -1,5 +1,5 @@
 
-<a href="https://github.com/feross/standard"><img src="http://makeworking.zackaryhickman.com/logo-long.png" alt="Standard JavaScript" height="70"></a>
+<a href="https://github.com/feross/standard"><img src="https://raw.githubusercontent.com/hickmanz/zaqotron/master/logo/zaqotron-logo.png" alt="Standard JavaScript" height="70"></a>
 =================
 <br>
 
