@@ -22,7 +22,7 @@ function getInstallerConfig () {
        iconUrl: "http://makeworking.zackaryhickman.com/icon.ico",
        setupIcon: path.join(rootPath, "src/assets/icons/win/icon.ico"),
        outputDirectory: path.join(outPath, 'windows-installer'),
-       exe: 'Make\ Working.exe',
-       setupExe: 'Make\ Working\ Setup.exe'
+       exe: 'Zaqotron.exe',
+       setupExe: 'Zaqotron\ Setup.exe'
    })
 }

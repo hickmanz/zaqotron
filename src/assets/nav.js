@@ -9,7 +9,8 @@ hideAllModals();
 if(!settings.has('setup.isComplete')){
   showModal('setup');
 } else {
-  showModal('main');
+  showModal('connect');
+  
 }
 //if setup.isComplete is false go to setup modal
 
@@ -22,6 +23,7 @@ function hideAllModals () {
     currentPage = ""
 }
 function showModal (modalName) {
+  console.log(modalName);
   const modal = document.getElementById(modalName + '-modal');
   modal.classList.add('is-shown');
   currentPage = modalName;

@@ -40,7 +40,7 @@ function createMainWindow () {
     protocol: 'file:',
     slashes: true
   }))
-  if (!isDev) {
+  if (isDev) {
     mainWindow.webContents.openDevTools()
   }
   // Emitted when the window is closed.
@@ -52,6 +52,8 @@ function createMainWindow () {
     removeWindow('mainWindow');
   })
 }
+
+//=========probably removable
 function createProgressWindow(){
   const modalPath = path.join( __dirname, './sections/progress.html')
   progressWin = new BrowserWindow({width: 400, height: 200, frame: false, show: false })
@@ -90,13 +92,7 @@ function removeWindow(windowName){
 // Some APIs can only be used after this event occurs.
 app.on('ready', function () {
   const settings = require('electron-settings');
-  
-  if(opts.input[0]){
-    createProgressWindow();
-  } else {
-    createMainWindow();
-  }
-
+  createMainWindow();
   if (!isDev) {
     appUpdater();
   }

@@ -3,7 +3,7 @@
 =================
 <br>
 
-Make Working is a tool for those who have a small but fast drive (an SSD) running along side a larger but slower one. Make Working provides an easy method for moving select files or folders to the faster drive so that you can take advantage of the faster speeds when the files are in use.  
+Zaqotron
 
 <br>
 
