@@ -3,7 +3,7 @@
 =================
 <br>
 
-Zaqotron
+Application for processing data from force gauge and calipers to produce force deflection curves.
 
 <br>
 
