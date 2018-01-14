@@ -50,6 +50,7 @@ handleSquirrelEvent: function() {
         case '--squirrel-install':
         case '--squirrel-updated':
 
+            /*
             regFilesMain.create( function (err) {  
                 if (err) throw err;
                 regFilesMain.set(Registry.DEFAULT_VALUE, 'REG_SZ', 'Change working', function (err) {
@@ -80,7 +81,7 @@ handleSquirrelEvent: function() {
                     if (err) throw err; 
                 });
             });
-
+            */
             // Install desktop and start menu shortcuts
             spawnUpdate(['--createShortcut', exeName]);
             
