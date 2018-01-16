@@ -2,15 +2,18 @@ import { deflate } from 'zlib';
 import { isRegExp } from 'util';
 
 import Chart from 'chart.js';
+import { request } from 'https';
 
 // This file is required by the index.html file and will
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
-var $ = require('jquery');
+const $ = require('jquery');
 const ipc = require('electron').ipcRenderer;
 const path = require('path')
+const fs = require('fs')
 const remote = require('electron').remote; 
 const app = remote.app;
+const csvParse = require('csv-parse')
 const nav = require('./assets/nav')
 const pandas = require('./assets/process')
 const settings = require('electron').remote.require('electron-settings');
@@ -193,9 +196,18 @@ ipc.on('file-selected', function (event, filePath) {
   console.log(filePath)
   //parse csv 
   //start processing
-  
-  pandas.processData(deflectionData)
+  fs.createReadStream(filePath[0]).pipe(parseForceCSV);
 });
+var parseForceCSV = csvParse({relax_column_count: true, from: 7, columns: [false, 'Force', false, 'Time', false]}, function(err, output){
+  if(err){
+    alert(err)
+    return
+  } else {
+    var forceData = output;
+    pandas.processData(deflectionData, forceData)
+  }
+})
+
 //Initialize windows 
 function init() { 
   document.getElementById("min-btn").addEventListener("click", function (e) {
