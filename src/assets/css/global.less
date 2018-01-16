@@ -297,6 +297,7 @@ input[type=number]::-webkit-outer-spin-button {
     padding: 15px;
     padding-right: 0;
     padding-top: 0;
+
     .heading{
         margin-bottom: 0px;
     }
@@ -312,6 +313,17 @@ input[type=number]::-webkit-outer-spin-button {
             border: solid #d8d8d8 1px;
             padding: 10px;
             -webkit-app-region: no-drag;
+            position: relative;
+            .cover{
+                height: 100%;
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+                visibility: hidden;
+                background: grey;
+                opacity: 60%;
+            }
             li{
                 display: flex;
                 flex-direction: row;
@@ -341,6 +353,7 @@ input[type=number]::-webkit-outer-spin-button {
             padding-right: 20px;
         }
     }
+
 }
 
 .modal{
