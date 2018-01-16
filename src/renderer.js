@@ -12,13 +12,11 @@ const path = require('path')
 const remote = require('electron').remote; 
 const app = remote.app;
 const nav = require('./assets/nav')
+const pandas = require('./assets/process')
 const settings = require('electron').remote.require('electron-settings');
 
 const Datastore = require('nedb');
 const db = new Datastore({ filename: path.join(app.getPath('userData'), 'main.db'), autoload: true, timestampData: true  });
-
-console.log(app.getPath('userData'));
-
 
 const SerialPort = require('serialport');
 const Readline = SerialPort.parsers.Readline;
@@ -33,8 +31,7 @@ var deflectionUnitsMM = true;
 var lastCaliperRead;
 
 var deflectionData ={
-  time: [],
-  deflection: [],
+  df:[],
   type: ""
 }
 
@@ -42,6 +39,7 @@ var chartData = {
   datasets:[
     {
       label: 'Deflection',
+      borderColor: '#c14c4c',
       data:[]
     }
   ]
@@ -57,13 +55,16 @@ var prevTime;
 var ctx;
 var options = {
   animation: false,
+  responsive: true,
+  maintainAspectRatio: false,
+  elements: { point: { radius: 0 } },
   scales:{
     xAxes: [{
       type: 'linear',
       display: true,
       scaleLabel: {
         display: true,
-        labelString: 'fpr',
+        labelString: 'Time (s)',
         fontStyle: 'bold'
       },
       ticks: {
@@ -74,12 +75,20 @@ var options = {
           maxTicksLimit: 30,
           stepSize: .1
         }
+      }],
+      yAxes: [{
+        type: 'linear',
+        display: true,
+        scaleLabel: {
+          display: true,
+          labelString: 'Deflection (mm)',
+          fontStyle: 'bold'
+        }
       }]
     }
   
 };
 
-const selectDirBtn = document.getElementById('select-directory');
 const continueBtn = document.getElementsByClassName('continue-btn');
 const connectBtn = document.getElementById('connect-calipers');
 const zeroBtn = document.getElementById('zero-calipers');
@@ -107,8 +116,7 @@ zeroBtn.addEventListener('click', function(event){
 testStartBtn.addEventListener('click', function(event){
   isRunning = true;
   chartData.datasets[0].data =[];
-  deflectionData.time = [];
-  deflectionData.deflection = [];
+  deflectionData.df = [];
   deflectionData.type = testType;
   deflectionData.forceUnits = forceUnits;
   if(testType == "Torsion"){
@@ -121,9 +129,11 @@ testStartBtn.addEventListener('click', function(event){
 testStopBtn.addEventListener('click', function(event){
   isRunning = false;
   //process data ask for other stuff - etc
-  console.dir(chartData);
-  nav.switchToPage('test-setup');
+  ipc.send('open-file-window')
+  nav.switchToPage('post-run');
 });
+
+
 
 forceUnitSelector.addEventListener('change', function(event){
   forceUnits = forceUnitSelector.options[forceUnitSelector.selectedIndex].value;
@@ -157,7 +167,6 @@ connectBtn.addEventListener('click', function (event) {
   document.getElementById("connection-error").innerHTML = '';
   var e = portSelector;
   caliperPort = e.options[e.selectedIndex].value;
-  console.log(caliperPort);
   var port = new SerialPort(caliperPort, {baudRate: 9800}, function (err) {
     if (err) {
       document.getElementById("connection-error").innerHTML = 'Error: ' + err.message;
@@ -180,13 +189,12 @@ for (var i = 0; i < continueBtn.length; i++) {
   });
 }
 
-ipc.on('selected-directory', function (event, path) {
-  document.getElementById('selected-directory').innerHTML = `You selected: ${path}`;
-  selectedDirectory = path;
-  if(nav.getCurrentPage() == "setup"){
-    document.getElementById('setup-continue').classList.remove('inactive');
-  }
+ipc.on('file-selected', function (event, filePath) {
+  console.log(filePath)
+  //parse csv 
+  //start processing
   
+  pandas.processData(deflectionData)
 });
 //Initialize windows 
 function init() { 
@@ -216,6 +224,7 @@ function init() {
 document.onreadystatechange = function () {
   if (document.readyState == "complete") {
     init(); 
+    console.log('another one');
   }
 };
 
@@ -225,15 +234,11 @@ function searchPorts(){
   }
 
   SerialPort.list(function (err, ports) {
-    console.log(ports);
     ports.forEach(function(port) {
       var el = document.createElement("option");
       el.textContent = port.comName + ' - ' + port.manufacturer;
       el.value = port.comName;
       portSelector.appendChild(el);
-      console.log(port.comName);
-      console.log(port.pnpId);
-      console.log(port.manufacturer);
     });
   });
 }
@@ -268,16 +273,15 @@ var processCalipers = function(data){
     deflection = deflection * -1;
   }
   if(isRunning){
-    if(deflectionData.deflection.length == 0){
+    if(deflectionData.df.length == 0){
       prevTime = new Date().getTime();
-      deflectionData.deflection.unshift(deflection);
-      deflectionData.time.unshift(0);
+      deflectionData.df.push({'deflection': deflection, 'time': 0});
       chartData.datasets[0].data.push({x: 0, y: parseFloat(deflection)});
     } else {
       var timeChange = (new Date().getTime() - prevTime )/1000;
-      var newTime = deflectionData.time[deflectionData.time.length-1] + timeChange;
-      deflectionData.time.unshift(newTime);
-      deflectionData.deflection.unshift(deflection);
+      prevTime = new Date().getTime();
+      var newTime = deflectionData.df[deflectionData.df.length-1].time + timeChange;
+      deflectionData.df.push({'deflection': deflection, 'time': newTime});
       chartData.datasets[0].data.push({x: newTime, y: parseFloat(deflection)});
     }
     document.getElementById("currentDeflection-running").innerHTML = deflection;

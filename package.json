@@ -29,6 +29,7 @@
     "fs-extra": "^4.0.1",
     "jquery": "^3.2.1",
     "nedb": "^1.8.0",
+    "pandas-js": "^0.2.4",
     "progress-stream": "^2.0.0",
     "serialport": "^6.0.4",
     "winreg": "^1.2.4"

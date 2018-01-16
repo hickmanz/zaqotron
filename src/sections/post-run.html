@@ -1,0 +1,40 @@
+<template class="task-template">
+    <div id="post-run-modal" class="post-run modal">
+            <div class="heading">
+                <p>
+                   Finished
+                </p>
+            </div>
+            <div class="holder">
+                <div class="col col30">
+                    <div class="content" id="">
+                        <div class="label">   
+                            Test Name: 
+                        </div>
+                        <input type="text" id="testname" class="red-val input">
+                        </input>
+                    </div>
+                    <div class="button-holder" style="justify-content:left;">
+                            <a id="stop-test" class="btn-green btn">Export Data <i class="icon-document-file-xlsx2" style="
+                                font-size: 26px;
+                            "></i></a>
+                    </div>
+                    <div class="button-holder" style="justify-content:left;">
+                            <a id="stop-test" class="btn-green btn">Export Graph <i class="icon-document-file-png2" style="
+                                font-size: 26px;
+                            "></i></a>
+                    </div> 
+                    <div class="button-holder" style="justify-content:left;">
+                            <a id="stop-test" class="btn-green btn">Next <i class="icon-arrow_forward"></i></a>
+                    </div>  
+                </div>
+                <div class="col col70">
+                    <div class='graph-holder'>
+                        <canvas id="finishChart" class="graph" ></canvas>
+                    </div>
+                </div>
+                
+            </div>
+
+        </div>
+    </template>

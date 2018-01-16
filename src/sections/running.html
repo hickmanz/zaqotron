@@ -6,7 +6,7 @@
                 </p>
             </div>
             <div class="holder">
-                <div class="col30">
+                <div class="col col30">
                     <div class="content">
                         <div class="label">
                             Deflection: 
@@ -19,16 +19,17 @@
                         </div>
 
                     </div>
-
+                    <div class="button-holder" style="justify-content:left;">
+                            <a id="stop-test" class="btn-red btn">Finish</a>
+                    </div> 
                 </div>
-                <div class="col70">
-                        GRAPH
-                        <canvas id="myChart" width="400" height="400"></canvas>
+                <div class="col col70">
+                    <div class='graph-holder'>
+                        <canvas id="myChart" class="graph" ></canvas>
+                    </div>
                 </div>
                 
             </div>
-            <div class="button-holder" style="justify-content:left;">
-                    <a id="stop-test" class="btn-red btn">Finish</a>
-            </div> 
+
         </div>
     </template>
