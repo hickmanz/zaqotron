@@ -21,12 +21,13 @@ var opts = parseArgs();
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow
-let progressWin
+let fileWin
 var windowArray = [];
+let mainRenderer
 
 function createMainWindow () {
   // Create the browser window.
-  mainWindow = new BrowserWindow({width: 800, height: 600, frame: false, show: false });
+  mainWindow = new BrowserWindow({width: 900, height: 700, frame: false, show: false });
   mainWindow.name = "mainWindow";  
   windowArray.push(mainWindow);
   mainWindow.setMenu(null);
@@ -69,6 +70,24 @@ function createProgressWindow(){
   });
   progressWin.loadURL(modalPath)
   progressWin.show()
+}
+
+function createGetFileWindow(){
+  const modalPath = path.join( __dirname, './sections/get-file.html')
+  fileWin = new BrowserWindow({width: 400, height: 200, frame: false, parent: mainWindow, modal: true, show: false })
+  fileWin.name = "fileWin";
+  windowArray.push(fileWin);
+  fileWin.on('closed', function () { 
+    fileWin = null;
+    removeWindow('fileWin');
+  })
+  fileWin.webContents.on('did-finish-load', ()=>{
+    fileWin.show();
+    fileWin.focus();
+  });
+  fileWin.loadURL(modalPath)
+  fileWin.show();
+  fileWin.webContents.openDevTools();
 }
 
 function getWindow(windowName) {
@@ -120,9 +139,20 @@ var workDirectory;
 
 ipc.on('open-file-dialog', function (event) {
   dialog.showOpenDialog({
-    properties: ['openFile', 'openDirectory']
+    properties: ['openFile']
   }, function (files) {
 	  workDirectory = files;
     if (files) event.sender.send('selected-directory', files)
   })
+})
+
+ipc.on('open-file-window', function (event) {
+  mainRenderer = event.sender;
+  createGetFileWindow();
+  
+})
+
+ipc.on('file-select', function (event, filePath) {
+  removeWindow('fileWin');
+  mainRenderer.send('file-selected', filePath)
 })
