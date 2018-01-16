@@ -1,4 +1,7 @@
 import { deflate } from 'zlib';
+import { isRegExp } from 'util';
+
+import Chart from 'chart.js';
 
 // This file is required by the index.html file and will
 // be executed in the renderer process for that window.
@@ -7,8 +10,16 @@ var $ = require('jquery');
 const ipc = require('electron').ipcRenderer;
 const path = require('path')
 const remote = require('electron').remote; 
+const app = remote.app;
 const nav = require('./assets/nav')
 const settings = require('electron').remote.require('electron-settings');
+
+const Datastore = require('nedb');
+const db = new Datastore({ filename: path.join(app.getPath('userData'), 'main.db'), autoload: true, timestampData: true  });
+
+console.log(app.getPath('userData'));
+
+
 const SerialPort = require('serialport');
 const Readline = SerialPort.parsers.Readline;
 const parser = new Readline();
@@ -21,8 +32,52 @@ var caliperOffset = 0;
 var deflectionUnitsMM = true;
 var lastCaliperRead;
 
+var deflectionData ={
+  time: [],
+  deflection: [],
+  type: ""
+}
+
+var chartData = {
+  datasets:[
+    {
+      label: 'Deflection',
+      data:[]
+    }
+  ]
+};
+
 var testType;
 var forceUnits;
+var torqueArmLng;
+var forceStartVal = 0.1;
+
+var prevTime;
+
+var ctx;
+var options = {
+  animation: false,
+  scales:{
+    xAxes: [{
+      type: 'linear',
+      display: true,
+      scaleLabel: {
+        display: true,
+        labelString: 'fpr',
+        fontStyle: 'bold'
+      },
+      ticks: {
+        callback: function(value, index, values) {
+          return parseFloat(value).toFixed(2);
+        },
+          autoSkip: true,
+          maxTicksLimit: 30,
+          stepSize: .1
+        }
+      }]
+    }
+  
+};
 
 const selectDirBtn = document.getElementById('select-directory');
 const continueBtn = document.getElementsByClassName('continue-btn');
@@ -31,14 +86,43 @@ const zeroBtn = document.getElementById('zero-calipers');
 const portSelector = document.getElementById('portNumber');
 const testTypeSelector = document.getElementById('testType');
 const forceUnitSelector = document.getElementById('forceUnitsSelect');
+const testStartBtn = document.getElementById('start-test');
+const testStopBtn = document.getElementById('stop-test');
 
-selectDirBtn.addEventListener('click', function (event) {
-  ipc.send('open-file-dialog')
+
+//selectDirBtn.addEventListener('click', function (event) {
+//  ipc.send('open-file-dialog')
+//});
+
+$("#torque-arm-length").on("change paste keyup", function() {
+  torqueArmLng = $(this).val();
 });
-
+$("#force-start-value").on("change paste keyup", function() {
+  forceStartVal = $(this).val();
+});
 zeroBtn.addEventListener('click', function(event){
   caliperOffset = lastCaliperRead;
-  
+});
+
+testStartBtn.addEventListener('click', function(event){
+  isRunning = true;
+  chartData.datasets[0].data =[];
+  deflectionData.time = [];
+  deflectionData.deflection = [];
+  deflectionData.type = testType;
+  deflectionData.forceUnits = forceUnits;
+  if(testType == "Torsion"){
+    deflectionData.torqueArmLng = torqueArmLng;
+  }
+  deflectionData.forceStartVal = forceStartVal;
+  nav.switchToPage('running');
+});
+
+testStopBtn.addEventListener('click', function(event){
+  isRunning = false;
+  //process data ask for other stuff - etc
+  console.dir(chartData);
+  nav.switchToPage('test-setup');
 });
 
 forceUnitSelector.addEventListener('change', function(event){
@@ -126,7 +210,7 @@ function init() {
   }); 
   searchPorts();
 
-  
+  ctx = document.getElementById("myChart").getContext("2d");  
 }; 
 
 document.onreadystatechange = function () {
@@ -183,9 +267,24 @@ var processCalipers = function(data){
   if(testType == 'torsion' || testType == 'compression'){
     deflection = deflection * -1;
   }
-  
-  document.getElementById("currentDeflection").innerHTML = deflection;
   if(isRunning){
-    //STORE OR WHATEVER
-  } 
+    if(deflectionData.deflection.length == 0){
+      prevTime = new Date().getTime();
+      deflectionData.deflection.unshift(deflection);
+      deflectionData.time.unshift(0);
+      chartData.datasets[0].data.push({x: 0, y: parseFloat(deflection)});
+    } else {
+      var timeChange = (new Date().getTime() - prevTime )/1000;
+      var newTime = deflectionData.time[deflectionData.time.length-1] + timeChange;
+      deflectionData.time.unshift(newTime);
+      deflectionData.deflection.unshift(deflection);
+      chartData.datasets[0].data.push({x: newTime, y: parseFloat(deflection)});
+    }
+    document.getElementById("currentDeflection-running").innerHTML = deflection;
+    var myLineChart = new Chart(ctx, {type:'line', data: chartData, options: options});
+
+  } else {
+    document.getElementById("currentDeflection").innerHTML = deflection;
+  }
+
 }
