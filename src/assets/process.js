@@ -6,10 +6,18 @@ let forceDF;
 let deflectionDF;
 
 function createDataFrames(deflectionDataRaw, forceDataRaw) {
-  //forceDF = new DataFrame(forceDataRaw)
+  forceDF = new DataFrame(forceDataRaw)
   deflectionDF = new DataFrame(deflectionDataRaw.df)
 
   console.log(deflectionDF.toString())
+  console.log(forceDF.toString())
+
+    var indexes = [], i;
+    for(i = 0; i < forceDF.length; i++)
+        if (forceDF['Force'][i] <= deflectionDataRaw.forceStartVal)
+            indexes.push(i);
+    console.log(indexes);
+  
 }
 
 
