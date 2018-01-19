@@ -25,6 +25,29 @@ let fileWin
 var windowArray = [];
 let mainRenderer
 
+let pyProc = null
+let pyPort = null
+
+const selectPort = () => {
+  pyPort = 4242
+  return pyPort
+}
+
+const createPyProc = () => {
+  let port = '' + selectPort()
+  let script = path.join(__dirname, 'pyProcess', 'process.py')
+  pyProc = require('child_process').spawn('python', [script, port])
+  if (pyProc != null) {
+    console.log('child process success')
+  }
+}
+
+const exitPyProc = () => {
+  pyProc.kill()
+  pyProc = null
+  pyPort = null
+}
+
 function createMainWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({width: 900, height: 700, frame: false, show: false });
@@ -111,7 +134,8 @@ function removeWindow(windowName){
 // Some APIs can only be used after this event occurs.
 app.on('ready', function () {
   const settings = require('electron-settings');
-  createMainWindow();
+  createMainWindow()
+  createPyProc()
   if (!isDev) {
     appUpdater();
   }
@@ -131,6 +155,8 @@ app.on('activate', function () {
       createMainWindow();
 
 })
+
+app.on('will-quit', exitPyProc)
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 const ipc = require('electron').ipcMain
