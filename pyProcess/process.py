@@ -1,73 +1,82 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import csv
+from aiohttp import web
+import socketio
 
-forceCsvHeaders = ['Force', 'Unit', 'Time']
 
-forceStartVal = 0.1
-deflectionStartVal = 0
-torqueArm = 35.0 #always in milimeters
-isTorsion = True 
+def processData():
+    forceCsvHeaders = ['Force', 'Unit', 'Time']
 
-forceData = pd.read_csv('force.csv', skiprows=6, header=None, names=forceCsvHeaders, usecols=[1,2,3])
-print('\n Data Types:')
-print(forceData.dtypes)
+    forceStartVal = 0.1
+    deflectionStartVal = 0
+    torqueArm = 35.0 #always in milimeters
+    isTorsion = True 
 
-trimStart = forceData.index[forceData['Force'] > forceStartVal].tolist()
+    forceData = pd.read_csv('force.csv', skiprows=6, header=None, names=forceCsvHeaders, usecols=[1,2,3])
 
-toDrop = []
+    trimStart = forceData.index[forceData['Force'] > forceStartVal].tolist()
 
-for i in range(0,trimStart[0]-1):
+    toDrop = []
+
+    for i in range(0,trimStart[0]-1):
         toDrop.append(i)
 
-forceData = forceData.drop(toDrop)
+    forceData = forceData.drop(toDrop)
 
-trimEnd = forceData.index[forceData['Force'] <= forceStartVal].tolist()
-trimEnd.pop(0)
-trimEnd.pop(0)
+    trimEnd = forceData.index[forceData['Force'] <= forceStartVal].tolist()
+    trimEnd.pop(0)
+    trimEnd.pop(0)
 
-forceData = forceData.drop(trimEnd)
+    forceData = forceData.drop(trimEnd)
 
-forceData.index = range(len(forceData))
+    forceData.index = range(len(forceData))
 
-deflectionData = pd.read_csv('deflection.csv', usecols=[1,2])
+    deflectionData = pd.read_csv('deflection.csv', usecols=[1,2])
 
-trimStart = deflectionData.index[deflectionData['Deflection'] > deflectionStartVal].tolist()
+    trimStart = deflectionData.index[deflectionData['Deflection'] > deflectionStartVal].tolist()
 
-toDrop = []
+    toDrop = []
 
-for i in range(0,trimStart[0]-1):
+    for i in range(0,trimStart[0]-1):
         toDrop.append(i)
 
-deflectionData = deflectionData.drop(toDrop)
-deflectionData.index = range(len(deflectionData))
+    deflectionData = deflectionData.drop(toDrop)
+    deflectionData.index = range(len(deflectionData))
 
-timeOffset = np.round(deflectionData['Time'][0], decimals=8) - forceData['Time'][0]
+    timeOffset = np.round(deflectionData['Time'][0], decimals=8) - forceData['Time'][0]
 
-deflectionData['Time'] = np.round(deflectionData['Time'], decimals=8) - timeOffset
+    deflectionData['Time'] = np.round(deflectionData['Time'], decimals=8) - timeOffset
 
-deflectionData['Time'][0] = forceData['Time'][0]
+    deflectionData['Time'][0] = forceData['Time'][0]
 
-forceData.index = forceData['Time']
-deflectionData.index = deflectionData['Time']
+    forceData.index = forceData['Time']
+    deflectionData.index = deflectionData['Time']
 
-combinedData = deflectionData.join(forceData, how='outer', rsuffix = '_2')
+    combinedData = deflectionData.join(forceData, how='outer', rsuffix = '_2')
 
-combinedData = combinedData.drop(columns=['Time', 'Time_2', 'Unit'])
+    combinedData = combinedData.drop(columns=['Time', 'Time_2', 'Unit'])
 
-combinedData = combinedData.interpolate()
+    combinedData = combinedData.interpolate()
 
-trimEnd = combinedData.index[combinedData['Force'] <= forceStartVal].tolist()
-trimEnd.pop(0)
-trimEnd.pop(0)
+    trimEnd = combinedData.index[combinedData['Force'] <= forceStartVal].tolist()
+    trimEnd.pop(0)
+    trimEnd.pop(0)
 
-combinedData = combinedData.drop(trimEnd)
+    combinedData = combinedData.drop(trimEnd)
 
-if isTorsion:
-    combinedData['Angle'] = np.degrees(np.arctan(combinedData['Deflection']/torqueArm))
-    combinedData['Torque'] = combinedData['Force'] * (torqueArm*0.0393701)
+    if isTorsion:
+        combinedData['Angle'] = np.degrees(np.arctan(combinedData['Deflection']/torqueArm))
+        combinedData['Torque'] = combinedData['Force'] * (torqueArm*0.0393701)
 
-print(combinedData.head())
+    combinedData.to_csv('combinedout.csv')
 
-combinedData.to_csv('combinedout.csv')
+
+def main():
+    sio = socketio.AsyncServer()
+    app = web.Application()
+    sio.attach(app)
+    web.run_app(app)
+
+if __name__ == '__main__':
+    main()
