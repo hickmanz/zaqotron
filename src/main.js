@@ -67,6 +67,7 @@ const createPyProc = () => {
     console.log('child process success on port ' + port)
   }
 }
+
 const exitPyProc = () => {
   pyProc.kill()
   pyProc = null
@@ -100,24 +101,6 @@ function createMainWindow () {
     mainWindow = null
     removeWindow('mainWindow');
   })
-}
-
-//=========probably removable
-function createProgressWindow(){
-  const modalPath = path.join( __dirname, './sections/progress.html')
-  progressWin = new BrowserWindow({width: 400, height: 200, frame: false, show: false })
-  progressWin.name = "progressWin";
-  windowArray.push(progressWin);
-  progressWin.on('closed', function () { 
-    progressWin = null;
-    removeWindow('progressWin');
-  })
-  progressWin.webContents.on('did-finish-load', ()=>{
-    progressWin.show();
-    progressWin.focus();
-  });
-  progressWin.loadURL(modalPath)
-  progressWin.show()
 }
 
 function createGetFileWindow(){

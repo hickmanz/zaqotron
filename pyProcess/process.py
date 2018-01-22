@@ -1,17 +1,104 @@
+from engineio import async_threading
 import pandas as pd
 import numpy as np
 import csv
-from aiohttp import web
+import threading
+import time
+from flask import Flask, render_template
 import socketio
+
+async_mode = 'threading'
+
+sio = socketio.Server(logger=True, async_mode=async_mode)
+app = Flask(__name__)
+app.wsgi_app = socketio.Middleware(sio, app.wsgi_app)
+app.config['SECRET_KEY'] = 'secret!'
+thread = None
+
+forceCsvHeaders = ['Force', 'Unit', 'Time']
+
+dataDir = ""
+forceStartVal = 0.1
+deflectionStartVal = 0
+torqueArm = 35.0 #always in milimeters
+isTorsion = True 
+
+
+def background_thread():
+    """Example of how to send server generated events to clients."""
+    count = 0
+    while True:
+        sio.sleep(10)
+        count += 1
+        sio.emit('my response', {'data': 'Server generated event'},
+                 namespace='/test')
+
+
+@app.route('/')
+def index():
+    global thread
+    if thread is None:
+        thread = sio.start_background_task(background_thread)
+    return render_template('index.html')
+
+
+@sio.on('my event', namespace='/test')
+def test_message(sid, message):
+    sio.emit('my response', {'data': message['data']}, room=sid,
+             namespace='/test')
+
+
+@sio.on('my broadcast event', namespace='/test')
+def test_broadcast_message(sid, message):
+    sio.emit('my response', {'data': message['data']}, namespace='/test')
+
+
+@sio.on('join', namespace='/test')
+def join(sid, message):
+    sio.enter_room(sid, message['room'], namespace='/test')
+    sio.emit('my response', {'data': 'Entered room: ' + message['room']},
+             room=sid, namespace='/test')
+
+
+@sio.on('leave', namespace='/test')
+def leave(sid, message):
+    sio.leave_room(sid, message['room'], namespace='/test')
+    sio.emit('my response', {'data': 'Left room: ' + message['room']},
+             room=sid, namespace='/test')
+
+
+@sio.on('close room', namespace='/test')
+def close(sid, message):
+    sio.emit('my response',
+             {'data': 'Room ' + message['room'] + ' is closing.'},
+             room=message['room'], namespace='/test')
+    sio.close_room(message['room'], namespace='/test')
+
+
+@sio.on('my room event', namespace='/test')
+def send_room_message(sid, message):
+    sio.emit('my response', {'data': message['data']}, room=message['room'],
+             namespace='/test')
+
+
+@sio.on('disconnect request', namespace='/test')
+def disconnect_request(sid):
+    sio.disconnect(sid, namespace='/test')
+
+
+@sio.on('connect', namespace='/test')
+def test_connect(sid, environ):
+    sio.emit('my response', {'data': 'Connected', 'count': 0}, room=sid,
+             namespace='/test')
+
+
+@sio.on('disconnect', namespace='/test')
+def test_disconnect(sid):
+    print('Client disconnected')
+
 
 
 def processData():
-    forceCsvHeaders = ['Force', 'Unit', 'Time']
-
-    forceStartVal = 0.1
-    deflectionStartVal = 0
-    torqueArm = 35.0 #always in milimeters
-    isTorsion = True 
 
     forceData = pd.read_csv('force.csv', skiprows=6, header=None, names=forceCsvHeaders, usecols=[1,2,3])
 
@@ -68,15 +155,8 @@ def processData():
     if isTorsion:
         combinedData['Angle'] = np.degrees(np.arctan(combinedData['Deflection']/torqueArm))
         combinedData['Torque'] = combinedData['Force'] * (torqueArm*0.0393701)
-
-    combinedData.to_csv('combinedout.csv')
-
-
-def main():
-    sio = socketio.AsyncServer()
-    app = web.Application()
-    sio.attach(app)
-    web.run_app(app)
+    
+    combinedData.to_csv('processed-data.csv')
 
 if __name__ == '__main__':
-    main()
+    app.run(threaded=True)
