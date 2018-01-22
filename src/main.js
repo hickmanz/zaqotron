@@ -33,9 +33,9 @@ const selectPort = () => {
   return pyPort
 }
 
-const PY_DIST_FOLDER = 'pycalcdist'
-const PY_FOLDER = 'pycalc'
-const PY_MODULE = 'api' // without .py suffix
+const PY_DIST_FOLDER = 'pyProcess'
+const PY_FOLDER = '../pyProcess'
+const PY_MODULE = 'process' // without .py suffix
 
 const guessPackaged = () => {
   const fullPath = path.join(__dirname, PY_DIST_FOLDER)
@@ -47,9 +47,9 @@ const getScriptPath = () => {
     return path.join(__dirname, PY_FOLDER, PY_MODULE + '.py')
   }
   if (process.platform === 'win32') {
-    return path.join(__dirname, PY_DIST_FOLDER, PY_MODULE, PY_MODULE + '.exe')
+    return path.join(__dirname, PY_DIST_FOLDER, PY_MODULE + '.exe')
   }
-  return path.join(__dirname, PY_DIST_FOLDER, PY_MODULE, PY_MODULE)
+  return path.join(__dirname, PY_DIST_FOLDER, PY_MODULE)
 }
 
 const createPyProc = () => {
@@ -144,6 +144,7 @@ app.on('ready', function () {
   const settings = require('electron-settings');
   createMainWindow()
   createPyProc()
+  
   if (!isDev) {
     appUpdater();
   }
@@ -152,6 +153,7 @@ app.on('ready', function () {
 app.on('window-all-closed', function () {
   // On OS X it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
+  exitPyProc();
   if (process.platform !== 'darwin') {
     app.quit()
   }
@@ -164,7 +166,13 @@ app.on('activate', function () {
 
 })
 
-app.on('will-quit', exitPyProc)
+app.on('will-quit', function () {
+  // On OS X it's common to re-create a window in the app when the
+  // dock icon is clicked and there are no other windows open.
+  exitPyProc();
+
+})
+
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 const ipc = require('electron').ipcMain
@@ -184,9 +192,4 @@ ipc.on('open-file-window', function (event) {
   mainRenderer = event.sender;
   createGetFileWindow();
   
-})
-
-ipc.on('file-select', function (event, filePath) {
-  removeWindow('fileWin');
-  mainRenderer.send('file-selected', filePath)
 })

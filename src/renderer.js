@@ -3,6 +3,7 @@ import { isRegExp } from 'util';
 
 import Chart from 'chart.js';
 import { request } from 'https';
+import { Series, DataFrame } from 'pandas-js';
 
 // This file is required by the index.html file and will
 // be executed in the renderer process for that window.
@@ -10,16 +11,29 @@ import { request } from 'https';
 const $ = require('jquery');
 const ipc = require('electron').ipcRenderer;
 const path = require('path')
-const fs = require('fs')
+const fs = require('fs-extra')
+var tmp = require('tmp');
 const remote = require('electron').remote; 
 const app = remote.app;
 const csvParse = require('csv-parse')
+const dateFormat = require('dateformat');
 const nav = require('./assets/nav')
-const pandas = require('./assets/process')
 const settings = require('electron').remote.require('electron-settings');
+const socket = require('socket.io-client')('http://localhost:5000/proc');
+
+socket.on('connect', function(){
+  console.log('connected to python')
+
+});
 
 const Datastore = require('nedb');
 const db = new Datastore({ filename: path.join(app.getPath('userData'), 'main.db'), autoload: true, timestampData: true  });
+
+db.find({}).sort({name: 1}).exec(function(err, docs) {  
+  docs.forEach(function(d) {
+      console.log('Found user:', d.name);
+  });
+});
 
 const SerialPort = require('serialport');
 const Readline = SerialPort.parsers.Readline;
@@ -27,6 +41,9 @@ const parser = new Readline();
 
 var selectedDirectory;
 var caliperPort;
+
+var tmpDir;
+var selectedFile
 
 var isRunning = false;
 var caliperOffset = 0;
@@ -52,6 +69,7 @@ var testType;
 var forceUnits;
 var torqueArmLng;
 var forceStartVal = 0.1;
+var testName
 
 var prevTime;
 
@@ -92,6 +110,12 @@ var options = {
   
 };
 
+fs.ensureDir(app.getPath('userData') + '/tmp', err => {
+  console.log(err) // => null
+  tmpDir = app.getPath('userData') + '/tmp'
+
+})
+
 const continueBtn = document.getElementsByClassName('continue-btn');
 const connectBtn = document.getElementById('connect-calipers');
 const zeroBtn = document.getElementById('zero-calipers');
@@ -100,18 +124,34 @@ const testTypeSelector = document.getElementById('testType');
 const forceUnitSelector = document.getElementById('forceUnitsSelect');
 const testStartBtn = document.getElementById('start-test');
 const testStopBtn = document.getElementById('stop-test');
+const selectDirBtn = document.getElementById('select-directory');
+const choseFileBtn = document.getElementById('chose-file');
 
+selectDirBtn.addEventListener('click', function (event) {
+  ipc.send('open-file-dialog');
+});
 
-//selectDirBtn.addEventListener('click', function (event) {
-//  ipc.send('open-file-dialog')
-//});
+choseFileBtn.addEventListener('click', function (event) {
+  console.log(selectedFile)
+  fs.createReadStream(selectedFile[0]).pipe(parseForceCSV);
+  testName = $("#testname").val()
+  $("#test-name").innerHTML = ""
+  nav.switchToPage('test-setup');
+});
+
+ipc.on('selected-directory', function (event, path) {
+  document.getElementById('selected-file').innerHTML = `You selected: ${path}`;
+  selectedFile = path;
+  document.getElementById('chose-file').classList.remove('inactive');
+})
 
 $("#torque-arm-length").on("change paste keyup", function() {
-  torqueArmLng = $(this).val();
+  torqueArmLng = parseFloat($(this).val());
 });
 $("#force-start-value").on("change paste keyup", function() {
-  forceStartVal = $(this).val();
+  forceStartVal = parseFloat($(this).val());
 });
+
 zeroBtn.addEventListener('click', function(event){
   caliperOffset = lastCaliperRead;
 });
@@ -131,12 +171,8 @@ testStartBtn.addEventListener('click', function(event){
 
 testStopBtn.addEventListener('click', function(event){
   isRunning = false;
-  //process data ask for other stuff - etc
-  ipc.send('open-file-window')
   nav.switchToPage('post-run');
 });
-
-
 
 forceUnitSelector.addEventListener('change', function(event){
   forceUnits = forceUnitSelector.options[forceUnitSelector.selectedIndex].value;
@@ -149,11 +185,8 @@ testTypeSelector.addEventListener('change', function(event){
   
   if(testType == "torsion"){
     document.getElementById('torque-arm-section').style.visibility = "visible";
-
   } else {
     document.getElementById('torque-arm-section').style.visibility = "hidden";
-
-    //hide torque arm item
   }
 
 });
@@ -192,21 +225,98 @@ for (var i = 0; i < continueBtn.length; i++) {
   });
 }
 
-ipc.on('file-selected', function (event, filePath) {
-  console.log(filePath)
-  //parse csv 
-  //start processing
-  fs.createReadStream(filePath[0]).pipe(parseForceCSV);
-});
+
+//parse csv created by python once it say it is done
 var parseForceCSV = csvParse({relax_column_count: true, from: 7, columns: [false, 'Force', false, 'Time', false]}, function(err, output){
   if(err){
     alert(err)
     return
   } else {
     var forceData = output;
-    pandas.processData(deflectionData, forceData)
+    let forceDF;
+    let deflectionDF;
+
+    forceDF = new DataFrame(forceData)
+    deflectionDF = new DataFrame(deflectionData.df)   
+
+    var newForceName = tmp.tmpNameSync({dir: tmpDir});
+    var newDeflectionName = tmp.tmpNameSync({dir: tmpDir});
+    var combinedName = tmp.tmpNameSync({dir: tmpDir});
+    console.log(newForceName)
+    
+    fs.writeFile(newForceName, forceDF.to_csv(), 'utf8', function (err) {
+      if (err) {
+        console.log('Some error occured - file either not saved or corrupted file saved.');
+      } else{
+        console.log('It\'s saved!');
+      }
+    });
+    fs.writeFile(newDeflectionName, deflectionDF.to_csv(), 'utf8', function (err) {
+      if (err) {
+        console.log('Some error occured - file either not saved or corrupted file saved.');
+      } else{
+        console.log('It\'s saved!');
+      }
+    });
+    
+    var toSocket = {
+      dir : tmpDir.split("\\").join("/"),
+      deflectionFile: newDeflectionName.split("\\").join("/"),
+      forceFile: newForceName.split("\\").join("/"),
+      combinedFile: combinedName.split("\\").join("/"),
+      type: testType,
+      torqueArmLng: torqueArmLng,
+      forceStartVal: forceStartVal,
+      forceUnits: forceUnits,
+      testName: testName
+    }
+
+    socket.emit('start-process', toSocket);
   }
 })
+
+socket.on('proc-finished', function (data) {
+  fs.createReadStream(data.combinedPath).pipe(csvParse({relax_column_count: true}, function(err, output){
+    if(err){
+      alert(err)
+      return
+    } else {
+      var combinedData = output
+      fs.unlink(data.combinedPath)
+      fs.unlink(data.forcePath)
+      fs.unlink(data.deflectionPath)
+      //savedata to db - open graph
+      var now = new Date()
+
+      var newDocument = {
+        data : output,
+        name : data.testName,
+        type : testType,
+        torqueArmLng: torqueArmLng,
+        forceStartVal: forceStartVal,
+        forceUnits: forceUnits,
+        date: dateFormat(now, "mmmm dS, yyyy, h:MM TT")
+      }
+
+      console.dir(newDocument)
+      db.insert(newDocument, function(err, doc){
+        console.log('Inserted', doc.name, 'with ID', doc._id);
+      })
+    }
+  }));
+
+});
+
+var parseCombinedCSV = csvParse({relax_column_count: true}, function(err, output){
+  if(err){
+    alert(err)
+    return
+  } else {
+    var combinedData = output
+    fs.unlink()
+  }
+})
+
 
 //Initialize windows 
 function init() { 
@@ -287,13 +397,16 @@ var processCalipers = function(data){
   if(isRunning){
     if(deflectionData.df.length == 0){
       prevTime = new Date().getTime();
-      deflectionData.df.push({'deflection': deflection, 'time': 0});
+
+      deflectionData.df.push({'Deflection': deflection, 'Time': 0});
       chartData.datasets[0].data.push({x: 0, y: parseFloat(deflection)});
+
     } else {
       var timeChange = (new Date().getTime() - prevTime )/1000;
       prevTime = new Date().getTime();
-      var newTime = deflectionData.df[deflectionData.df.length-1].time + timeChange;
-      deflectionData.df.push({'deflection': deflection, 'time': newTime});
+      var newTime = deflectionData.df[deflectionData.df.length-1].Time + timeChange;
+
+      deflectionData.df.push({'Deflection': deflection, 'Time': newTime});
       chartData.datasets[0].data.push({x: newTime, y: parseFloat(deflection)});
     }
     document.getElementById("currentDeflection-running").innerHTML = deflection;
