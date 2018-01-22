@@ -23,7 +23,6 @@ deflectionStartVal = 0
 torqueArm = 35.0 #always in milimeters
 isTorsion = True 
 
-
 def background_thread():
     """Example of how to send server generated events to clients."""
     count = 0
