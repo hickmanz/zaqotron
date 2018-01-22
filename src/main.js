@@ -67,7 +67,6 @@ const createPyProc = () => {
     console.log('child process success on port ' + port)
   }
 }
-
 const exitPyProc = () => {
   pyProc.kill()
   pyProc = null
