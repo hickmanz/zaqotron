@@ -22,6 +22,7 @@ var opts = parseArgs();
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow
 let fileWin
+let graphWin
 var windowArray = [];
 let mainRenderer
 
@@ -104,7 +105,7 @@ function createMainWindow () {
 
 function createGetFileWindow(){
   const modalPath = path.join( __dirname, './sections/get-file.html')
-  fileWin = new BrowserWindow({width: 400, height: 200, frame: false, parent: mainWindow, modal: true, show: false })
+  fileWin = new BrowserWindow({width: 900, height: 700, frame: false, parent: mainWindow, modal: true, show: false })
   fileWin.name = "fileWin";
   windowArray.push(fileWin);
   fileWin.on('closed', function () { 
@@ -118,6 +119,25 @@ function createGetFileWindow(){
   fileWin.loadURL(modalPath)
   fileWin.show();
   fileWin.webContents.openDevTools();
+}
+
+
+function createGraphWindow(){
+  const modalPath = path.join( __dirname, './sections/graph.html')
+  graphWin = new BrowserWindow({width: 900, height: 700, frame: false, show: false })
+  graphWin.name = "graphWin";
+  windowArray.push(graphWin);
+  graphWin.on('closed', function () { 
+    graphWin = null;
+    removeWindow('graphWin');
+  })
+  graphWin.webContents.on('did-finish-load', ()=>{
+    graphWin.show();
+    graphWin.focus();
+  });
+  graphWin.loadURL(modalPath)
+  graphWin.show();
+  graphWin.webContents.openDevTools();
 }
 
 function getWindow(windowName) {
@@ -177,6 +197,7 @@ app.on('will-quit', function () {
 const ipc = require('electron').ipcMain
 const dialog = require('electron').dialog
 var workDirectory;
+var dataToGraph;
 
 ipc.on('open-file-dialog', function (event) {
   dialog.showOpenDialog({
@@ -186,9 +207,18 @@ ipc.on('open-file-dialog', function (event) {
     if (files) event.sender.send('selected-directory', files)
   })
 })
+ipc.on('graph-data', function(event , data){ 
+  console.log(data.dataIds) 
+  dataToGraph = data.dataIds
+  createGraphWindow()
+});
 
 ipc.on('open-file-window', function (event) {
   mainRenderer = event.sender;
   createGetFileWindow();
   
+})
+
+ipc.on('grapher-ready', function (event) {
+  event.sender.send('data-ids', dataToGraph)
 })

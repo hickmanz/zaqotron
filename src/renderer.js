@@ -301,12 +301,16 @@ socket.on('proc-finished', function (data) {
       console.dir(newDocument)
       db.insert(newDocument, function(err, doc){
         console.log('Inserted', doc.name, 'with ID', doc._id);
+        console.dir(doc)
+        graphData([doc._id]);
       })
     }
   }));
 
 });
-
+function graphData(dataIds){
+  ipc.send('graph-data', {dataIds: dataIds})
+}
 var parseCombinedCSV = csvParse({relax_column_count: true}, function(err, output){
   if(err){
     alert(err)
