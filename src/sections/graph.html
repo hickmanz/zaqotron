@@ -21,37 +21,31 @@
             <a id="close-btn" class="icon-close btn"></a>
         </div>       
     </div>
-    <div id="grapher-modal" class="grapher modal">
+    <div id="grapher-modal" class="grapher modal is-shown">
         <div class="heading">
-            <p>
-                Finished
-            </p>
+
         </div>
         <div class="holder">
             <div class="col col30">
                 <div class="content" id="">
-                    <div class="label">   
-                        Test Name: 
-                    </div>
-
                 </div>
-                <div class="button-holder" style="justify-content:left;">
-                        <a id="stop-test" class="btn-green btn">Export Data <i class="icon-document-file-xlsx2" style="
+                <div class="button-holder" style="justify-content:left; padding-bottom:20px;">
+                        <a id="export-data" class="btn-green btn">Export Data <i class="icon-document-file-xlsx2" style="
                             font-size: 26px;
                         "></i></a>
                 </div>
-                <div class="button-holder" style="justify-content:left;">
-                        <a id="stop-test" class="btn-green btn">Export Graph <i class="icon-document-file-png2" style="
+                <div class="button-holder" style="justify-content:left; padding-bottom:20px;">
+                        <a id="export-graph" class="btn-green btn">Export Graph <i class="icon-document-file-png2" style="
                             font-size: 26px;
                         "></i></a>
                 </div> 
-                <div class="button-holder" style="justify-content:left;">
+                <div class="button-holder" style="justify-content:left; padding-bottom:20px;">
                         <a id="close-grapher" class="btn-red btn">Close <i class="icon-arrow_forward"></i></a>
                 </div>  
             </div>
-            <div class="col col70">
-                <div class='graph-holder'>
-                    <canvas id="finishChart" class="graph" ></canvas>
+            <div class="col col70" style="-webkit-app-region: no-drag;">
+                <div id="graph-holder" class='graph-holder' style="background:white;">
+                    <canvas id="dataChart" class="graph" ></canvas>
                 </div>
             </div>
             

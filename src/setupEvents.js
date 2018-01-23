@@ -93,12 +93,14 @@ handleSquirrelEvent: function() {
             // --squirrel-updated handlers
 
             // Remove desktop and start menu shortcuts
+            /*
             regFilesMain.destroy(function (err) {             
                 if (err) throw err;  
             });
             regFoldersMain.destroy(function (err) {             
                 if (err) throw err;  
             });
+            */
             spawnUpdate(['--removeShortcut', exeName]);
 
             setTimeout(app.quit, 1000);

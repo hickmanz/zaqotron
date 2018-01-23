@@ -118,7 +118,6 @@ function createGetFileWindow(){
   });
   fileWin.loadURL(modalPath)
   fileWin.show();
-  fileWin.webContents.openDevTools();
 }
 
 
@@ -135,9 +134,9 @@ function createGraphWindow(){
     graphWin.show();
     graphWin.focus();
   });
+  graphWin.setResizable(true)
   graphWin.loadURL(modalPath)
   graphWin.show();
-  graphWin.webContents.openDevTools();
 }
 
 function getWindow(windowName) {
@@ -205,6 +204,13 @@ ipc.on('open-file-dialog', function (event) {
   }, function (files) {
 	  workDirectory = files;
     if (files) event.sender.send('selected-directory', files)
+  })
+})
+ipc.on('open-save-dialog', function (event, data) {
+  dialog.showSaveDialog({ 
+    defaultPath: data.name
+  }, function (filename) {
+    if (filename) event.sender.send('save-selected', {filename: filename, type: data.type})
   })
 })
 ipc.on('graph-data', function(event , data){ 

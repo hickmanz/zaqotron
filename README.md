@@ -12,10 +12,19 @@ Application for processing data from force gauge and calipers to produce force d
 
 <br>
 
-Usage
+Features to add
 ----
 
+- Better handling of eddge cases /incomplete forms
+- Inactive buttons / hints
+- Handle type tension
+- Better unit control
+- Handle negative force data
+- Sort previous data
+- Edit graph data (title/axes)
 
-
-How does it work
+Python improvements
 ----
+
+- End deflection data once zero
+

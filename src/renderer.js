@@ -29,12 +29,6 @@ socket.on('connect', function(){
 const Datastore = require('nedb');
 const db = new Datastore({ filename: path.join(app.getPath('userData'), 'main.db'), autoload: true, timestampData: true  });
 
-db.find({}).sort({name: 1}).exec(function(err, docs) {  
-  docs.forEach(function(d) {
-      console.log('Found user:', d.name);
-  });
-});
-
 const SerialPort = require('serialport');
 const Readline = SerialPort.parsers.Readline;
 const parser = new Readline();
@@ -73,6 +67,7 @@ var testName
 
 var prevTime;
 
+var deflectionChart
 var ctx;
 var options = {
   animation: false,
@@ -109,7 +104,7 @@ var options = {
     }
   
 };
-
+console.log(app.getAppPath())
 fs.ensureDir(app.getPath('userData') + '/tmp', err => {
   console.log(err) // => null
   tmpDir = app.getPath('userData') + '/tmp'
@@ -126,17 +121,102 @@ const testStartBtn = document.getElementById('start-test');
 const testStopBtn = document.getElementById('stop-test');
 const selectDirBtn = document.getElementById('select-directory');
 const choseFileBtn = document.getElementById('chose-file');
+const graphBtn = document.getElementById('graph-data');
+const deleteBtn = document.getElementById('delete-data');
+
+graphBtn.addEventListener('click', function(event){
+  //get seleteced IDs and send to graph
+  var checked = $('#testList input:checked').map(function(){
+    return $(this).val();
+  }).get();
+
+  if(checked.length == 0){
+    alert('Nothing selected')
+  } else {
+    graphData(checked);
+  }
+
+})
+deleteBtn.addEventListener('click', function(event){
+  var checked = $('#testList input:checked').map(function(){
+    return $(this).val();
+  }).get();
+
+  if(checked.length == 0){
+    alert('Nothing selected')
+  } else {
+    db.remove({_id: { $in: checked}}, { multi: true }, function (err, numRemoved) {
+      if(err){
+        alert(err)
+      }
+      updateTestList()
+    });
+  }
+})
 
 selectDirBtn.addEventListener('click', function (event) {
   ipc.send('open-file-dialog');
 });
 
 choseFileBtn.addEventListener('click', function (event) {
+  
+  //parse csv created by python once it say it is done
+  var parseForceCSV = csvParse({relax_column_count: true, from: 7, columns: [false, 'Force', false, 'Time', false]}, function(err, output){
+    if(err){
+      alert(err)
+      return
+    } else {
+      var forceData = output;
+      let forceDF;
+      let deflectionDF;
+
+      forceDF = new DataFrame(forceData)
+      deflectionDF = new DataFrame(deflectionData.df)   
+
+      var newForceName = tmp.tmpNameSync({dir: tmpDir});
+      var newDeflectionName = tmp.tmpNameSync({dir: tmpDir});
+      var combinedName = tmp.tmpNameSync({dir: tmpDir});
+      console.log(newForceName)
+      
+      fs.writeFile(newForceName, forceDF.to_csv(), 'utf8', function (err) {
+        if (err) {
+          console.log('Some error occured - file either not saved or corrupted file saved.');
+        } else{
+          console.log('It\'s saved!');
+        }
+      });
+      fs.writeFile(newDeflectionName, deflectionDF.to_csv(), 'utf8', function (err) {
+        if (err) {
+          console.log('Some error occured - file either not saved or corrupted file saved.');
+        } else{
+          console.log('It\'s saved!');
+        }
+      });
+      
+      var toSocket = {
+        dir : tmpDir.split("\\").join("/"),
+        deflectionFile: newDeflectionName.split("\\").join("/"),
+        forceFile: newForceName.split("\\").join("/"),
+        combinedFile: combinedName.split("\\").join("/"),
+        type: testType,
+        torqueArmLng: torqueArmLng,
+        forceStartVal: forceStartVal,
+        forceUnits: forceUnits,
+        testName: testName
+      }
+
+      socket.emit('start-process', toSocket);
+    }
+  })
+    
+  
   console.log(selectedFile)
   fs.createReadStream(selectedFile[0]).pipe(parseForceCSV);
   testName = $("#testname").val()
   $("#test-name").innerHTML = ""
   nav.switchToPage('test-setup');
+
+
 });
 
 ipc.on('selected-directory', function (event, path) {
@@ -171,6 +251,7 @@ testStartBtn.addEventListener('click', function(event){
 
 testStopBtn.addEventListener('click', function(event){
   isRunning = false;
+  deflectionChart.destroy()
   nav.switchToPage('post-run');
 });
 
@@ -225,56 +306,6 @@ for (var i = 0; i < continueBtn.length; i++) {
   });
 }
 
-
-//parse csv created by python once it say it is done
-var parseForceCSV = csvParse({relax_column_count: true, from: 7, columns: [false, 'Force', false, 'Time', false]}, function(err, output){
-  if(err){
-    alert(err)
-    return
-  } else {
-    var forceData = output;
-    let forceDF;
-    let deflectionDF;
-
-    forceDF = new DataFrame(forceData)
-    deflectionDF = new DataFrame(deflectionData.df)   
-
-    var newForceName = tmp.tmpNameSync({dir: tmpDir});
-    var newDeflectionName = tmp.tmpNameSync({dir: tmpDir});
-    var combinedName = tmp.tmpNameSync({dir: tmpDir});
-    console.log(newForceName)
-    
-    fs.writeFile(newForceName, forceDF.to_csv(), 'utf8', function (err) {
-      if (err) {
-        console.log('Some error occured - file either not saved or corrupted file saved.');
-      } else{
-        console.log('It\'s saved!');
-      }
-    });
-    fs.writeFile(newDeflectionName, deflectionDF.to_csv(), 'utf8', function (err) {
-      if (err) {
-        console.log('Some error occured - file either not saved or corrupted file saved.');
-      } else{
-        console.log('It\'s saved!');
-      }
-    });
-    
-    var toSocket = {
-      dir : tmpDir.split("\\").join("/"),
-      deflectionFile: newDeflectionName.split("\\").join("/"),
-      forceFile: newForceName.split("\\").join("/"),
-      combinedFile: combinedName.split("\\").join("/"),
-      type: testType,
-      torqueArmLng: torqueArmLng,
-      forceStartVal: forceStartVal,
-      forceUnits: forceUnits,
-      testName: testName
-    }
-
-    socket.emit('start-process', toSocket);
-  }
-})
-
 socket.on('proc-finished', function (data) {
   fs.createReadStream(data.combinedPath).pipe(csvParse({relax_column_count: true}, function(err, output){
     if(err){
@@ -295,7 +326,7 @@ socket.on('proc-finished', function (data) {
         torqueArmLng: torqueArmLng,
         forceStartVal: forceStartVal,
         forceUnits: forceUnits,
-        date: dateFormat(now, "mmmm dS, yyyy, h:MM TT")
+        date: dateFormat(now, "m-d-yyyy, h:MM")
       }
 
       console.dir(newDocument)
@@ -303,6 +334,7 @@ socket.on('proc-finished', function (data) {
         console.log('Inserted', doc.name, 'with ID', doc._id);
         console.dir(doc)
         graphData([doc._id]);
+        updateTestList()
       })
     }
   }));
@@ -344,6 +376,8 @@ function init() {
   }); 
   searchPorts();
 
+  updateTestList()
+
   ctx = document.getElementById("myChart").getContext("2d");  
 }; 
 
@@ -353,6 +387,35 @@ document.onreadystatechange = function () {
     console.log('another one');
   }
 };
+
+
+function updateTestList(){
+  var ul = document.getElementById("testList");
+  ul.innerHTML = ''
+  db.find({}).sort({createdAt: -1}).exec(function(err, docs) {  
+    docs.forEach(function(d) {
+      var li = document.createElement("li");
+      var checkbox = document.createElement('input');
+      checkbox.type = "checkbox";
+      checkbox.className = "checkbox dataList"
+      checkbox.value = d._id;
+      var nameField = document.createElement('div');
+      nameField.className="name"
+      nameField.innerHTML = d.name
+      var typeField = document.createElement('div');
+      typeField.className="type"
+      typeField.innerHTML =d.type
+      var dateField = document.createElement('div');
+      dateField.className="date"
+      dateField.innerHTML =d.date
+      li.appendChild(checkbox);
+      li.appendChild(nameField)
+      li.appendChild(typeField)
+      li.appendChild(dateField)
+      ul.appendChild(li);
+    });
+  });
+}
 
 function searchPorts(){
   for (i = 1; i < portSelector.options.length; i++) {
@@ -404,6 +467,7 @@ var processCalipers = function(data){
 
       deflectionData.df.push({'Deflection': deflection, 'Time': 0});
       chartData.datasets[0].data.push({x: 0, y: parseFloat(deflection)});
+      deflectionChart = new Chart(ctx, {type:'line', data: chartData, options: options});
 
     } else {
       var timeChange = (new Date().getTime() - prevTime )/1000;
@@ -414,8 +478,8 @@ var processCalipers = function(data){
       chartData.datasets[0].data.push({x: newTime, y: parseFloat(deflection)});
     }
     document.getElementById("currentDeflection-running").innerHTML = deflection;
-    var myLineChart = new Chart(ctx, {type:'line', data: chartData, options: options});
-
+    //var myLineChart = new Chart(ctx, {type:'line', data: chartData, options: options});
+    deflectionChart.update()
   } else {
     document.getElementById("currentDeflection").innerHTML = deflection;
   }

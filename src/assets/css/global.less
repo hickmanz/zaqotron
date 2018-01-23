@@ -106,7 +106,6 @@ html{
     color: var(--color);
     background-color: #fff;
 }
-
 .btn{
     -webkit-app-region: no-drag;
     display: inline-block;
@@ -440,7 +439,7 @@ input[type=number]::-webkit-outer-spin-button {
                     text-align: center;
                 }
                 .date{
-                    width: 90px;
+                    width: 130px;
                     text-align: center;
                 }
             }
@@ -449,9 +448,16 @@ input[type=number]::-webkit-outer-spin-button {
             align-self: flex-end;
             padding-left: 20px;
             padding-right: 20px;
+            flex-direction: column;
+            a{
+                margin-top: 10px;
+            }
         }
     }
 
+}
+#portNumber{
+    width:350px;
 }
 
 .modal{
@@ -549,7 +555,12 @@ input[type=number]::-webkit-outer-spin-button {
       transform: translateY(0);
     }
   }
-  
+.connect{
+    .content{
+        justify-content: space-between;
+
+    }
+}
 .post-run{
     #testname{
         flex-grow: 1;
