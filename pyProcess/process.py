@@ -206,7 +206,7 @@ def findMiddle(input_list):
     if middle % 2 != 0:
         return input_list[int(middle - .5)]
     else:
-        return (input_list[int(middle)], input_list[int(middle-1)])
+        return input_list[int(middle)]
 
 def getopts(argv):
     opts = {}  # Empty dictionary to store key-value pairs.
