@@ -5,7 +5,7 @@ const {app, autoUpdater, dialog} = require('electron');
 const version = app.getVersion();
 const platform = os.platform() + '_' + os.arch();  // usually returns darwin_64
 
-const updaterFeedURL = 'http://release.makeworking.zackaryhickman.com/update/win32/' + version;
+const updaterFeedURL = 'http://release.zaqotron.zackaryhickman.com/update/win32/' + version;
 
 function appUpdater() {
 	autoUpdater.setFeedURL(updaterFeedURL);
