@@ -313,9 +313,9 @@ socket.on('proc-finished', function (data) {
       return
     } else {
       var combinedData = output
-      fs.unlink(data.combinedPath)
-      fs.unlink(data.forcePath)
-      fs.unlink(data.deflectionPath)
+      //fs.unlink(data.combinedPath)
+      //fs.unlink(data.forcePath)
+      //fs.unlink(data.deflectionPath)
       //savedata to db - open graph
       var now = new Date()
 
