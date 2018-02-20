@@ -1,7 +1,7 @@
 {
   "name": "zaqotron",
   "productName": "Zaqotron",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "May the force be with you",
   "main": "src/main.js",
   "scripts": {

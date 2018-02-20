@@ -38,26 +38,21 @@ const PY_DIST_FOLDER = 'pyProcess'
 const PY_FOLDER = '../pyProcess'
 const PY_MODULE = 'process' // without .py suffix
 
-const guessPackaged = () => {
-  const fullPath = path.join(__dirname, PY_DIST_FOLDER)
-  return require('fs').existsSync(fullPath)
-}
-
 const getScriptPath = () => {
-  if (!guessPackaged()) {
+  if (isDev) {
     return path.join(__dirname, PY_FOLDER, PY_MODULE + '.py')
-  }
-  if (process.platform === 'win32') {
+  } else if (process.platform === 'win32') {
     return path.join(__dirname, PY_DIST_FOLDER, PY_MODULE + '.exe')
+  } else {
+    return path.join(__dirname, PY_DIST_FOLDER, PY_MODULE)
   }
-  return path.join(__dirname, PY_DIST_FOLDER, PY_MODULE)
 }
 
 const createPyProc = () => {
   let script = getScriptPath()
   let port = '' + selectPort()
 
-  if (guessPackaged()) {
+  if (!isDev) {
     pyProc = require('child_process').execFile(script, [port])
   } else {
     pyProc = require('child_process').spawn('python', [script, port])
@@ -76,7 +71,7 @@ const exitPyProc = () => {
 
 function createMainWindow () {
   // Create the browser window.
-  mainWindow = new BrowserWindow({width: 900, height: 700, frame: false, show: false });
+  mainWindow = new BrowserWindow({width: 950, height: 750, frame: false, show: false });
   mainWindow.name = "mainWindow";  
   windowArray.push(mainWindow);
   mainWindow.setMenu(null);

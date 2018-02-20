@@ -305,6 +305,44 @@ for (var i = 0; i < continueBtn.length; i++) {
     }
   });
 }
+//manualAdd()
+function manualAdd(){
+  var testTypeIs = "torsion"
+  var data = {
+    combinedPath: 'C:/Users/Zack/AppData/Roaming/Electron/tmp/tmp-14456Qsj6KE2zihIX',
+    forcePath: 'C:/Users/Zack/AppData/Roaming/Electron/tmp/tmp-4648hpVeJm1H5TKE',
+    deflectionPath: 'C:/Users/Zack/AppData/Roaming/Electron/tmp/tmp-4648CFEPifOnZIxJ',
+    testName: "Plastic + Lens Torsion #5"
+  }
+  fs.createReadStream(data.combinedPath).pipe(csvParse({relax_column_count: true}, function(err, output){
+    if(err){
+      alert(err)
+      return
+    } else {
+      var combinedData = output
+      //savedata to db - open graph
+      var now = new Date()
+
+      var newDocument = {
+        data : combinedData,
+        name : data.testName,
+        type : testTypeIs,
+        torqueArmLng: torqueArmLng,
+        forceStartVal: forceStartVal,
+        forceUnits: forceUnits,
+        date: dateFormat(now, "m-d-yyyy, h:MM")
+      }
+
+      console.dir(newDocument)
+      db.insert(newDocument, function(err, doc){
+        console.log('Inserted', doc.name, 'with ID', doc._id);
+        console.dir(doc)
+        graphData([doc._id]);
+        updateTestList()
+      })
+    }
+  }));
+}
 
 socket.on('proc-finished', function (data) {
   fs.createReadStream(data.combinedPath).pipe(csvParse({relax_column_count: true}, function(err, output){
@@ -313,14 +351,14 @@ socket.on('proc-finished', function (data) {
       return
     } else {
       var combinedData = output
-      //fs.unlink(data.combinedPath)
-      //fs.unlink(data.forcePath)
-      //fs.unlink(data.deflectionPath)
+      fs.unlink(data.combinedPath)
+      fs.unlink(data.forcePath)
+      fs.unlink(data.deflectionPath)
       //savedata to db - open graph
       var now = new Date()
 
       var newDocument = {
-        data : output,
+        data : combinedData,
         name : data.testName,
         type : testType,
         torqueArmLng: torqueArmLng,
@@ -340,6 +378,10 @@ socket.on('proc-finished', function (data) {
   }));
 
 });
+
+socket.on('test', function (data){
+  console.dir(data);
+})
 function graphData(dataIds){
   ipc.send('graph-data', {dataIds: dataIds})
 }

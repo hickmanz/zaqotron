@@ -179,6 +179,7 @@ function beginGraph(){
   }
   scatterChart = new Chart(ctx, {
     type: 'line',
+    scaleStartValue : 0 ,
     data: 
         {
         datasets: datasets   
@@ -206,6 +207,7 @@ function beginGraph(){
                   labelString: xLabel,
                   fontStyle: 'bold'
                 },
+                ticks: { min: 0 }
             } ],
             yAxes: [{
               type: 'linear',
@@ -214,7 +216,8 @@ function beginGraph(){
                 display: true,
                 labelString: yLabel,
                 fontStyle: 'bold'
-              }
+              },
+              ticks: { min: 0 }
             }]
 
         }

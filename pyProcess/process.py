@@ -139,22 +139,6 @@ def processData(message, sid):
     pieces = (combinedTopData, combinedBottomData)
     combinedData = pd.concat(pieces, ignore_index=True)
     
-    '''
-    timeOffset = np.round(deflectionData['Time'][0], decimals=8) - forceData['Time'][0]
-    deflectionData['Time'] = np.round(deflectionData['Time'], decimals=8) - timeOffset #reset deflection time stamp based on time offset
-
-    deflectionData['Time'][0] = forceData['Time'][0] #set start times to be the same
-
-    forceData.index = forceData['Time']
-    deflectionData.index = deflectionData['Time']
-
-    combinedData = deflectionData.join(forceData, how='outer', rsuffix = '_2')
-
-    combinedData = combinedData.drop(['Time', 'Time_2'], axis=1)
-
-    combinedData = combinedData.interpolate()
-    '''
-
     trimEnd = combinedData.index[combinedData['Force'] <= forceStartVal].tolist()
     trimEnd.pop(0)
     trimEnd.pop(0)
@@ -188,6 +172,7 @@ def processData(message, sid):
         print('finished')
     else :
         sio.emit('proc-finished', {'combinedPath': combinedPath, 'forcePath' : forcePath, 'deflectionPath': deflectionPath, 'testName':testName}, room=sid, namespace='/proc')
+        sio.emit('test', {'combinedPath': combinedPath, 'forcePath' : forcePath, 'deflectionPath': deflectionPath, 'testName':testName, 'combinedData': combinedData, 'combinedDataBottom': combinedData.iloc[findMiddle(combinedData.index[combinedData['Force'] == combinedData.max()['Force']].tolist()):]}, room=sid, namespace='/proc')
 
 def startTest(dir):
     message = {
